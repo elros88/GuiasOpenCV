@@ -1,0 +1,94 @@
+#Compilar Opencv con soporte a Qt5
+
+Guia para compilar Opencv 3.3.0 con soporte para Qt5.
+
+En esta guia se compila Opencv teniendo en cuenta que Qt fue compilada e instalada en un directorio distinto al directorio por defecto.
+Ademas vamos a instalar la libreria Opencv_contrib para tener acceso a las funciones extras de Opencv.
+
+
+##Paso 1. Obtener la libreria
+
+Para descargar las librerias utilizamos Git y descargamos las versiones mas reciente. Para eso escribimos en el terminal:
+
+```
+    git clone git@github.com:opencv/opencv.git
+```
+
+cuando la descarga termine escribimos:
+
+```
+    git clone git@github.com:opencv/opencv_contrib.git
+```
+
+
+##Paso 2. Elegir Version
+
+Luego de descargar las librerias tenemos que elegir la version a compilar, esto lo hacemos cambiando la rama de los repositorios git que acabamos de bajar (***Nota!:*** al hacer ```git clone``` en el paso anterior lo que hicimos fue descargar un ***repositorio git*** en la rama master, las versiones se encuentran en otras ramas del repositorio; Opencv llama a las ramas por sus numeros de version, por lo que debemos cambiarnos de rama para poder compilar la version que querramos).
+
+Primero entramos en la carpeta ***opencv_contrib***, cambiamos de rama y actualizamos:
+
+```
+    cd opencv_contrib
+    git checkout 3.3.0
+    git pull origin 3.3.0
+``` 
+Lo que hicimos fue cambiar a la rama 3.3.0 y descargarla con el comando ```pull```.
+Una vez terminado hacemos lo mismo con la carpeta ***opencv***
+
+```
+    cd ../opencv
+    git checkout 3.3.0
+    git pull origin 3.3.0
+```
+Notamos que los comandos son los mismos, esto se debe a que opencv y opencv_contrib llaman a sus ramas de la misma forma.
+
+
+##Paso3. Configurar el Ambiente
+
+Aqui para poder dar soporte a la libreria ***Qt*** es necesario configurar nuestra entorno para decirle donde se encuentra la libreria instalada, para eso configuramos el archivo ***.profile*** que se encuentra en nuestra carpeta home agregandole la siguiente linea:
+
+``` PATH=/opt/Qt5.7/bin:$PATH ```
+Luego en el terminal actualizamos nuestra configuracion del sistema:
+```source ~/.profile```
+
+
+###Paso 4. Configurar e Instalar Opencv
+
+Este es el ultimo paso. Primero configuramos la libreria.
+```
+cmake -D CMAKE_BUILD_TYPE=DEBUG -D CMAKE_INSTALL_PREFIX=/opt/opencv -D BUILD_NEW_PYTHON_SUPPORT=ON -D WITH_V4L=ON -D INSTALL_PYTHON_EXAMPLES=ON -D BUILD_EXAMPLES=ON -D WITH_QT=ON -D QT_QMAKE_EXECUTABLE=/opt/Qt5.7/bin/qmake -D Qt5Concurrent_DIR=/opt/Qt5.7/include/QtConcurrent -D Qt5Core_DIR=/opt/Qt5.7/include/QtCore -D Qt5Gui_DIR=/opt/Qt5.7/include/QtGui -D Qt5OpenGL_DIR=/opt/Qt5.7/include/QtOpenGL -D Qt5Test_DIR=/opt/Qt5.7/include/QtTest -D Qt5Widgets_DIR=/opt/Qt5.7/include/QtWidgets -D WITH_OPENGL=ON -D OPENCV_EXTRA_MODULES_PATH=../../opencv_contrib/modules .. 
+```
+
+La libreria se va a instalar en ***/opt/opencv*** (si el directorio no existe se crea durante la instalacion) y se le dije a script de configuracion que variables debe activar, entre ellas ***WITH_QT*** que activa el soporte a qt.
+Una vez terminado procedemos a compilar e instalar
+```
+    make -j4
+    sudo make install
+```
+la opcion -jn de make es opcional, nos permite elegir el numero de hilos que queremos usar para el proceso de compilacion.
+
+
+##Paso 5. A Programar!!!
+Listo el proceso de instalacion podemos utilizar nuestra libreria. Si queremos utilizarla en un proyecto con Qt y utilizamos Qt Creator como entorno de desarrollo solo debemos incluir estas lineas en el archivo .pro de nuestro proyecto:
+
+```
+    LIBS += -L"/opt/opencv/lib" -lopencv_core -lopencv_imgproc -lopencv_highgui \
+        -lopencv_videoio -lopencv_features2d -lopencv_objdetect -lopencv_tracking
+    INCLUDEPATH += /opt/opencv/include/
+``` 
+
+
+#Compilar para ARM
+
+```
+    sudo apt install  gcc-arm-linux-gnueabi gcc-arm-linux-gnueabihf
+```
+
+```
+    PATH=/home/antonio/Aplicaciones/crosscompile/sysroot/opt/Qt-beagle/bin:$PATH
+```
+
+```
+cmake -D CMAKE_BUILD_TYPE=DEBUG -D CMAKE_INSTALL_PREFIX=/home/antonio/Aplicaciones/crosscompile/sysroot/opt/opencv -D BUILD_NEW_PYTHON_SUPPORT=ON -D WITH_V4L=ON -D INSTALL_PYTHON_EXAMPLES=ON -D BUILD_EXAMPLES=ON -D WITH_QT=ON -D QT_QMAKE_EXECUTABLE=/opt/Qt5.7/bin/qmake -D Qt5Concurrent_DIR=/opt/Qt5.7/include/QtConcurrent -D Qt5Core_DIR=/opt/Qt5.7/include/QtCore -D Qt5Gui_DIR=/opt/Qt5.7/include/QtGui -D Qt5OpenGL_DIR=/opt/Qt5.7/include/QtOpenGL -D Qt5Test_DIR=/opt/Qt5.7/include/QtTest -D Qt5Widgets_DIR=/opt/Qt5.7/include/QtWidgets -D WITH_OPENGL=ON -DCMAKE_TOOLCHAIN_FILE=../platforms/linux/arm-gnueabi.toolchain.cmake -D OPENCV_EXTRA_MODULES_PATH=../../opencv_contrib/modules .. 
+```
+
